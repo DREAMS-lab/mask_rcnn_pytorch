@@ -9,6 +9,7 @@ from engine import train_one_epoch, evaluate
 import utils
 import torch
 from data import Dataset
+from model import get_model_instance_segmentation
 
 def get_transform(train):
     transforms = []
@@ -17,19 +18,17 @@ def get_transform(train):
         transforms.append(T.RandomHorizontalFlip(0.5))
     return T.Compose(transforms)
 
-
-
-
 if __name__ == '__main__':
-    # todo 
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 3
     # use our dataset and defined transformations
-    dataset = PennFudanDataset('PennFudanPed', get_transform(train=True))
-    dataset_test = PennFudanDataset('PennFudanPed', get_transform(train=False))
+    dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True))
+    dataset_test = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=False))
+    image, target = dataset[2]
+
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -46,13 +45,13 @@ if __name__ == '__main__':
         collate_fn=utils.collate_fn)
 
     # get the model using our helper function
-    model = get_model_instance_segmentation(num_classes)
+    mask_rcnn = get_model_instance_segmentation(num_classes)
 
     # move model to the right device
-    model.to(device)
+    mask_rcnn.to(device)
 
     # construct an optimizer
-    params = [p for p in model.parameters() if p.requires_grad]
+    params = [p for p in mask_rcnn.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=0.005,
                                 momentum=0.9, weight_decay=0.0005)
     # and a learning rate scheduler
@@ -61,14 +60,14 @@ if __name__ == '__main__':
                                                    gamma=0.1)
 
     # let's train it for 10 epochs
-    num_epochs = 10
+    num_epochs = 2
 
     for epoch in range(num_epochs):
         # train for one epoch, printing every 10 iterations
-        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
+        train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=10)
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
-        evaluate(model, data_loader_test, device=device)
+        evaluate(mask_rcnn, data_loader_test, device=device)
 
     print("That's it!")

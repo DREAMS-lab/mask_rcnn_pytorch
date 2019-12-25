@@ -18,8 +18,9 @@ def get_model_instance_segmentation(num_classes):
     # replace the pre-trained head with a new one
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
-    anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
-                                       aspect_ratios=((0.5, 1.0, 2.0),))
+    # the size shape and the aspect_ratios shape should be the same as the shape in the loaded model
+    anchor_generator = AnchorGenerator(sizes=((32,), (64,), (128,), (256,), (512,)),
+                                       aspect_ratios=((0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0)))
     model.rpn.anchor_generator = anchor_generator
 
     # now get the number of input features for the mask classifier

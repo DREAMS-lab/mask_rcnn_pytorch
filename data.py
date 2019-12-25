@@ -82,7 +82,6 @@ class Dataset(object):
 
         num_objs = obj_ids.shape[-1]
         boxes = []
-        print(num_objs)
         for i in range(num_objs):
             pos = np.where(masks[:, :, i])
             xmin = np.min(pos[1])
@@ -120,7 +119,8 @@ class Dataset(object):
         image, target = self.__getitem(idx)
         labels = target["labels"]
         labels = (labels > 0) + 1  # only two classes, non-damaged and damaged
-        print(labels)
+        target["labels"] = labels
+        return image, target
 
 
     def __len__(self):
@@ -138,4 +138,4 @@ class Dataset(object):
 
 if __name__  ==  "__main__":
     ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/")
-    ds[23]
+    image, target = ds[23]
