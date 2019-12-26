@@ -1,13 +1,15 @@
 """
 model.py
-Zhiang Chen, Dec 24 2019
+Zhiang Chen, Dec 25 2019
 Mask RCNN model from torchvision
 """
 
+import torch
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from torchvision.models.detection.rpn import AnchorGenerator
+from visualize import *
 
 def get_model_instance_segmentation(num_classes):
     # load an instance segmentation model pre-trained pre-trained on COCO
@@ -32,6 +34,52 @@ def get_model_instance_segmentation(num_classes):
                                                        num_classes)
 
     return model
+
+def predict(model, data, device, batch=False):
+    model.eval()
+    if not batch:
+        pred = model(data.unsqueeze(0).to(device))
+    else:
+        pred = model(data.to(device))
+
+    return pred
+
+def visualize_result(image, pred):
+    """
+    visualize only one prediction
+    :param pred:
+    :return:
+    """
+    print("df")
+    boxes_ = pred["boxes"].cpu().detach().numpy().astype(int)
+    boxes = np.empty_like(boxes_)
+    boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3] = boxes_[:, 1], boxes_[:, 0], boxes_[:, 3], boxes_[:, 2]
+    labels = pred["labels"].cpu().detach().numpy()
+    scores = pred["scores"].cpu().detach().numpy()
+    masks = pred["masks"]
+    indices = scores > 0.7
+    boxes = boxes[indices]
+    labels = labels[indices]
+    scores = scores[indices]
+    masks = masks[indices].squeeze(1)
+    masks = (masks.permute((1, 2, 0)).cpu().detach().numpy() > 0.5).astype(np.uint8)
+    image = image.permute((1, 2, 0)).cpu().detach().numpy()*255
+    return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"], scores=scores)
+
+def visualize_gt(image, target):
+    image = image.permute((1, 2, 0)).cpu().detach().numpy() * 255
+    boxes_ = target["boxes"].cpu().detach().numpy().astype(int)
+    boxes = np.empty_like(boxes_)
+    boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3] = boxes_[:, 1], boxes_[:, 0], boxes_[:, 3], boxes_[:, 2]
+    masks = target["masks"].permute((1, 2, 0)).cpu().detach().numpy()
+    labels = target["labels"].cpu().detach().numpy()
+    print(boxes.shape)
+    print(masks.shape)
+    print(labels.shape)
+    return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"])
+
+def train(model, epochs, device):
+    pass
 
 if __name__  ==  "__main__":
     model = get_model_instance_segmentation(3)
