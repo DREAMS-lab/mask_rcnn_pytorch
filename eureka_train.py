@@ -35,17 +35,17 @@ if __name__ == '__main__':
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=2, shuffle=True, num_workers=4,
+        dataset, batch_size=2, shuffle=True, num_workers=2,
         collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, shuffle=False, num_workers=4,
+        dataset_test, batch_size=1, shuffle=False, num_workers=2,
         collate_fn=utils.collate_fn)
 
     # get the model using our helper function
     mask_rcnn = get_model_instance_segmentation(num_classes)
 
-    read_param = True
+    read_param = False
     if read_param:
         mask_rcnn.load_state_dict(torch.load("trained_param/epoch_0001.param"))
 
@@ -60,12 +60,12 @@ if __name__ == '__main__':
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                    step_size=3,
                                                    gamma=0.1)
-    init_epoch = 2
-    num_epochs = 8
+    init_epoch = 0
+    num_epochs = 100
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
         # train for one epoch, printing every 10 iterations
-        train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=10)
+        train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset

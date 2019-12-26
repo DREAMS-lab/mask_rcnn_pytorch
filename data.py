@@ -93,7 +93,7 @@ class Dataset(object):
         # convert everything into a torch.Tensor
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
         #labels = torch.ones((num_objs,), dtype=torch.int64)
-        labels = torch.as_tensor(obj_ids, dtype=torch.float32)
+        labels = torch.as_tensor(obj_ids, dtype=torch.int64)
         masks = torch.as_tensor(masks, dtype=torch.uint8)
         masks = masks.permute((2, 0, 1))
 
@@ -118,7 +118,7 @@ class Dataset(object):
     def __getitem__(self, idx):
         image, target = self.__getitem(idx)
         labels = target["labels"]
-        labels = (labels > 0) + 1  # only two classes, non-damaged and damaged
+        labels = (labels > 0).type(torch.int64) + 1  # only two classes, non-damaged and damaged
         target["labels"] = labels
         return image, target
 
@@ -137,5 +137,5 @@ class Dataset(object):
         masks.show()
 
 if __name__  ==  "__main__":
-    ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/")
+    ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=False)
     image, target = ds[23]
