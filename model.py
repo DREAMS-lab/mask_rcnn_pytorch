@@ -44,7 +44,7 @@ def predict(model, data, device, batch=False):
 
     return pred
 
-def visualize_result(image, pred):
+def visualize_pred(image, pred):
     """
     visualize only one prediction
     :param pred:
@@ -77,6 +77,13 @@ def visualize_gt(image, target):
     print(masks.shape)
     print(labels.shape)
     return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"])
+
+def visualize_result(model, data):
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    image, target = data
+    visualize_gt(image, target)
+    pred = model(image.unsqueeze(0).to(device))
+    visualize_pred(image, pred[0])
 
 def train(model, epochs, device):
     pass

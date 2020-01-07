@@ -74,6 +74,7 @@ class Dataset(object):
         cls_path = os.path.join(self.label_path, self.classes[idx])
 
         image = Image.open(img_path).convert("RGB")
+        image = image.resize((1000, 1000))
         # 0 encoding non-damaged is supposed to be 1 for training.
         # In training, 0 is of background
         obj_ids = np.load(cls_path)
@@ -109,6 +110,7 @@ class Dataset(object):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
+        target["image_name"] = img_path
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)
@@ -126,9 +128,13 @@ class Dataset(object):
     def __len__(self):
         return len(self.images)
 
-    def show(self, idx):
+    def display(self, idx):
         image, target = self.__getitem__(idx)
+        image = image.permute((1, 2, 0))
+        image = (image.numpy() * 255).astype(np.uint8)
+        image = Image.fromarray(image)
         image.show()
+
         masks = target["masks"]
         masks = masks.permute((1, 2, 0))
         masks = masks.numpy()
