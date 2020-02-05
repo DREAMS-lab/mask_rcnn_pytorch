@@ -139,3 +139,7 @@ class Dataset(object):
 if __name__  ==  "__main__":
     ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=False)
     image, target = ds[23]
+    image = np.array(image)
+    print(image)
+    print(image.shape)
+    print(target)
