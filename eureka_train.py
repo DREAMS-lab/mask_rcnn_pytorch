@@ -75,7 +75,7 @@ if __name__ == '__main__':
         save_param = "trained_param/epoch_{:04d}.param".format(epoch)
         torch.save(mask_rcnn.state_dict(), save_param)
 
-
+"""
 num_classes = 3
 # use our dataset and defined transformations
 dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False)
@@ -105,3 +105,4 @@ if read_param:
 
 # move model to the right device
 mask_rcnn.to(device)
+"""

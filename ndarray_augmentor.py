@@ -56,7 +56,7 @@ def sample(image, rotation_min, rotation_max, fliplr, flipud, zoom_min, zoom_max
 
 def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1):
     c = 0
-    npy_files = [os.path.join(npy_path, f) for f in os.listdir(npy_path)]
+    npy_files = [os.path.join(npy_path, f) for f in os.listdir(npy_path) if f.endswith('.npy')]
     while c < batch_number:
         for npy_file in npy_files:
             data = np.load(npy_file)
@@ -65,10 +65,26 @@ def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=F
             image = data[:, :, :8]
             masks = data[:, :, 8:]
             num_objs = masks.shape[2]
+            print(masks.shape[2])
             for i in reversed(range(num_objs)):
                 mask = masks[:, :, i]
                 if mask.max() < 250:
                     masks = np.delete(masks, i, axis=2)
+                    continue
+                mask = mask >= 250
+                pos = np.where(mask)
+                xmin = np.min(pos[1])
+                xmax = np.max(pos[1])
+                ymin = np.min(pos[0])
+                ymax = np.max(pos[0])
+                if xmin >= xmax:
+                    masks = np.delete(masks, i, axis=2)
+                    continue
+                if ymin >= ymax:
+                    masks = np.delete(masks, i, axis=2)
+                    continue
+            print(masks.shape[2])
+            print('\n')
             data = np.append(image, masks, axis=2)
             save_file = npy_file.split('.npy')[0] + "_" + unid + ".npy"
             np.save(save_file, data)
@@ -85,5 +101,5 @@ if __name__ == '__main__':
         zoom_min=0.8,
         zoom_max=1.2)
 
-    npy_path = './datasets/Rock/data/'
+    npy_path = './datasets/Rock/data_test/'
     augmentor(npy_path, **config)

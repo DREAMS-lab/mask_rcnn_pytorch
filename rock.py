@@ -22,16 +22,17 @@ import matplotlib.pyplot as plt
 """
 
 class Dataset(object):
-    def __init__(self, data_path, transforms=None):
+    def __init__(self, data_path, transforms=None, input_channel=8):
         self.data_path = data_path
         self.transforms = transforms
         self.data_files = [f for f in os.listdir(data_path) if f.endswith(".npy")]
+        self.input_channel = input_channel
 
     def __getitem__(self, idx):
         data_path = os.path.join(self.data_path, self.data_files[idx])
 
         data = np.load(data_path)
-        image = data[:, :, :8]
+        image = data[:, :, :self.input_channel]
         masks = data[:, :, 8:]
         num_objs = masks.shape[2]
         """
@@ -100,10 +101,11 @@ class Dataset(object):
     def imageStat(self):
         images = np.empty((0, 8), float)
         for data_file in self.data_files:
-            data_path = os.path.join(self.data_path, data_file)
-            data = np.load(data_path)
-            image = data[:, :, :8].astype(float).reshape(-1, 8)/255.0
-            images = np.append(images, image, axis=0)
+            if len(data_file.split('_'))==2:
+                data_path = os.path.join(self.data_path, data_file)
+                data = np.load(data_path)
+                image = data[:, :, :8].astype(float).reshape(-1, 8)/255.0
+                images = np.append(images, image, axis=0)
         return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
                np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
 
@@ -114,5 +116,5 @@ class Dataset(object):
 if __name__  ==  "__main__":
     ds = Dataset("./datasets/Rock/data/")
     image_mean, image_std, image_max, image_min = ds.imageStat()
-    print(len(ds))
-    ds.show(0)
+    image, target = ds[3]
+    ds.show(10)

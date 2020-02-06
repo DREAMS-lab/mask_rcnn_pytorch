@@ -27,14 +27,14 @@ if __name__ == '__main__':
     num_classes = 2
     # use our dataset and defined transformations
     dataset = Dataset("./datasets/Rock/data/", transforms=get_transform(train=True))
-    dataset_test = Dataset("./datasets/Rock/data/", transforms=get_transform(train=False))
+    dataset_test = Dataset("./datasets/Rock/data_test/", transforms=get_transform(train=False))
     image_mean, image_std, _, _ = dataset.imageStat()
 
     # split the dataset in train and test set
-    indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices)
-    indices_test = torch.randperm(len(dataset_test)).tolist()
-    dataset_test = torch.utils.data.Subset(dataset_test, indices_test)
+    #indices = torch.randperm(len(dataset)).tolist()
+    #dataset = torch.utils.data.Subset(dataset, indices)
+    #indices_test = torch.randperm(len(dataset_test)).tolist()
+    #dataset_test = torch.utils.data.Subset(dataset_test, indices_test)
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
@@ -44,7 +44,6 @@ if __name__ == '__main__':
     data_loader_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=1, shuffle=False, num_workers=4,
         collate_fn=utils.collate_fn)
-
     # get the model using our helper function
     mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=8, image_mean=image_mean, image_std=image_std)
 
@@ -57,14 +56,14 @@ if __name__ == '__main__':
 
     # construct an optimizer
     params = [p for p in mask_rcnn.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=0.0001,
+    optimizer = torch.optim.SGD(params, lr=0.001,
                                 momentum=0.9, weight_decay=0.00001)
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                    step_size=3,
                                                    gamma=0.1)
     init_epoch = 0
-    num_epochs = 2
+    num_epochs = 100
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
         # train for one epoch, printing every 10 iterations
