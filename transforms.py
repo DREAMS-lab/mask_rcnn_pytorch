@@ -5,8 +5,10 @@ copied from https://github.com/pytorch/vision/blob/master/references/detection/t
 
 import random
 import torch
+import cv2
 
 from torchvision.transforms import functional as F
+import numpy as np
 
 
 def _flip_coco_person_keypoints(kps, width):
@@ -50,9 +52,20 @@ class RandomHorizontalFlip(object):
 
 
 
+    def rotateImage(self, image, angle):
+        l = len(image.shape)
+        image_center = tuple(np.array(image.shape[:2]) / 2)
+        rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+        result = cv2.warpAffine(image, rot_mat, image.shape[:2], flags=cv2.INTER_LINEAR)
+        if len(result.shape) < l:
+            y, x = result.shape
+            result = result.reshape((y, x, 1))
+        return result
+
+
 
 class ToTensor(object):
     def __call__(self, image, target):
-        image = F.to_tensor(image)
+        image = F.to_tensor(image).float()
         return image, target
 

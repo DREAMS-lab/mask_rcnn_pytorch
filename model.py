@@ -5,6 +5,7 @@ Mask RCNN model from torchvision
 """
 
 import torch
+import torch.nn as nn
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
@@ -35,6 +36,38 @@ def get_model_instance_segmentation(num_classes):
 
     return model
 
+def get_rock_model_instance_segmentation(num_classes, input_channel=8, image_mean=None, image_std=None):
+    # load an instance segmentation model pre-trained pre-trained on COCO
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+    if input_channel > 3:
+        model.transform.image_mean = image_mean
+        model.transform.image_std = image_std
+
+
+    # get number of input features for the classifier
+    in_features = model.roi_heads.box_predictor.cls_score.in_features
+    # replace the pre-trained head with a new one
+    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+
+    # the size shape and the aspect_ratios shape should be the same as the shape in the loaded model
+    anchor_generator = AnchorGenerator(sizes=((16,), (32,), (64,), (128,), (256,)),
+                                       aspect_ratios=((0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0)))
+    model.rpn.anchor_generator = anchor_generator
+
+    # now get the number of input features for the mask classifier
+    in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
+    hidden_layer = 256
+    # and replace the mask predictor with a new one
+    model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask,
+                                                       hidden_layer,
+                                                       num_classes)
+
+    model.backbone.body.conv1 = nn.Conv2d(8, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model.roi_heads.detections_per_img = 200
+
+    return model
+
+
 def predict(model, data, device, batch=False):
     model.eval()
     if not batch:
@@ -57,7 +90,7 @@ def visualize_pred(image, pred):
     labels = pred["labels"].cpu().detach().numpy()
     scores = pred["scores"].cpu().detach().numpy()
     masks = pred["masks"]
-    indices = scores > 0.7
+    indices = scores > 0.60
     boxes = boxes[indices]
     labels = labels[indices]
     scores = scores[indices]
@@ -84,6 +117,7 @@ def visualize_result(model, data):
     visualize_gt(image, target)
     pred = model(image.unsqueeze(0).to(device))
     visualize_pred(image, pred[0])
+    visualize_gt(image, target)
 
 def train(model, epochs, device):
     pass

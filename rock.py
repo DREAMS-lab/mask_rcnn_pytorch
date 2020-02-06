@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 import pickle
+import matplotlib.pyplot as plt
 
 """
 ./datasets/
@@ -26,8 +27,6 @@ class Dataset(object):
         self.transforms = transforms
         self.data_files = [f for f in os.listdir(data_path) if f.endswith(".npy")]
 
-
-
     def __getitem__(self, idx):
         data_path = os.path.join(self.data_path, self.data_files[idx])
 
@@ -35,12 +34,21 @@ class Dataset(object):
         image = data[:, :, :8]
         masks = data[:, :, 8:]
         num_objs = masks.shape[2]
+        """
+        for i in reversed(range(num_objs)):
+            mask = masks[:, :, i]
+            if mask.max() < 250:
+                masks = np.delete(masks, i, axis=2)
+        num_objs = masks.shape[2]
+        """
         # 0 encoding non-damaged is supposed to be 1 for training.
         # In training, 0 is of background
         obj_ids = np.ones(num_objs)
-        masks = masks == 255  # convert to binary masks
+
+        masks = masks >= 250  # convert to binary masks
 
         boxes = []
+
         for i in range(num_objs):
             pos = np.where(masks[:, :, i])
             xmin = np.min(pos[1])
@@ -89,10 +97,22 @@ class Dataset(object):
         masks = Image.fromarray(masks)
         masks.show()
 
+    def imageStat(self):
+        images = np.empty((0, 8), float)
+        for data_file in self.data_files:
+            data_path = os.path.join(self.data_path, data_file)
+            data = np.load(data_path)
+            image = data[:, :, :8].astype(float).reshape(-1, 8)/255.0
+            images = np.append(images, image, axis=0)
+        return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
+               np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
+
+
+
+
+
 if __name__  ==  "__main__":
     ds = Dataset("./datasets/Rock/data/")
-    image, target = ds[4]
-    print(image)
-    print(image.shape)
-    print(target)
-    ds.show(4)
+    image_mean, image_std, image_max, image_min = ds.imageStat()
+    print(len(ds))
+    ds.show(0)
