@@ -125,7 +125,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     for i in range(N):
         #color = colors[i]
         if class_ids[i] == 1:
-            color = (0, 1, 1)
+            color = (1, 1, 0)
         else:
             color = (1, 0, 1)
 

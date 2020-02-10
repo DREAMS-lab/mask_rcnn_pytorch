@@ -62,7 +62,7 @@ def get_rock_model_instance_segmentation(num_classes, input_channel=8, image_mea
                                                        hidden_layer,
                                                        num_classes)
 
-    model.backbone.body.conv1 = nn.Conv2d(8, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model.backbone.body.conv1 = nn.Conv2d(input_channel, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
     model.roi_heads.detections_per_img = 200
 
     return model
@@ -83,24 +83,30 @@ def visualize_pred(image, pred):
     :param pred:
     :return:
     """
-    print("df")
+    if image.shape[0] > 3:
+        image = image[:3, :, :]
     boxes_ = pred["boxes"].cpu().detach().numpy().astype(int)
     boxes = np.empty_like(boxes_)
     boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3] = boxes_[:, 1], boxes_[:, 0], boxes_[:, 3], boxes_[:, 2]
     labels = pred["labels"].cpu().detach().numpy()
     scores = pred["scores"].cpu().detach().numpy()
     masks = pred["masks"]
-    indices = scores > 0.60
+    indices = scores > 0.50
     boxes = boxes[indices]
     labels = labels[indices]
     scores = scores[indices]
     masks = masks[indices].squeeze(1)
     masks = (masks.permute((1, 2, 0)).cpu().detach().numpy() > 0.5).astype(np.uint8)
     image = image.permute((1, 2, 0)).cpu().detach().numpy()*255
-    return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"], scores=scores)
+    #return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"], scores=scores)
+    return display_instances(image, boxes, masks, labels, class_names=["background", "rock"], scores=scores)
 
 def visualize_gt(image, target):
-    image = image.permute((1, 2, 0)).cpu().detach().numpy() * 255
+    if image.shape[0] == 3:
+        image = image.permute((1, 2, 0)).cpu().detach().numpy() * 255
+    else:
+        image = image[:3, :, :].permute((1, 2, 0)).cpu().detach().numpy() * 255
+
     boxes_ = target["boxes"].cpu().detach().numpy().astype(int)
     boxes = np.empty_like(boxes_)
     boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3] = boxes_[:, 1], boxes_[:, 0], boxes_[:, 3], boxes_[:, 2]
@@ -109,7 +115,7 @@ def visualize_gt(image, target):
     print(boxes.shape)
     print(masks.shape)
     print(labels.shape)
-    return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"])
+    return display_instances(image, boxes, masks, labels, class_names=["background", "rock"])
 
 def visualize_result(model, data):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

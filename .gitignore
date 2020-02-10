@@ -1,3 +1,4 @@
+trained_param*
 trained_param/*
 *.pickle
 datasets/*

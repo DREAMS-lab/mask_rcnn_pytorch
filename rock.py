@@ -22,18 +22,35 @@ import matplotlib.pyplot as plt
 """
 
 class Dataset(object):
-    def __init__(self, data_path, transforms=None, input_channel=8):
+    def __init__(self, data_path, transforms=None, input_channel=8, training=True):
         self.data_path = data_path
         self.transforms = transforms
         self.data_files = [f for f in os.listdir(data_path) if f.endswith(".npy")]
         self.input_channel = input_channel
+        self.training = training
 
     def __getitem__(self, idx):
         data_path = os.path.join(self.data_path, self.data_files[idx])
 
         data = np.load(data_path)
-        image = data[:, :, :self.input_channel]
-        masks = data[:, :, 8:]
+
+        if self.input_channel == 8:
+            image = data[:, :, :self.input_channel]
+        elif self.input_channel == 3:
+            image = data[:, :, :3]
+        elif self.input_channel == 5:
+            image = data[:, :, :5]
+        elif self.input_channel == 6:
+            rgb = data[:, :, :3]
+            dem = data[:, :, -3:]
+            image = np.append(rgb, dem, axis=2)
+        elif self.input_channel == -3:
+            image = data[:, :, -3:]
+
+        if data.shape[2] == 8:
+            masks = np.ones_like(image[:, :, :3]) * 255
+        else:
+            masks = data[:, :, 8:]
         num_objs = masks.shape[2]
         """
         for i in reversed(range(num_objs)):
@@ -77,6 +94,8 @@ class Dataset(object):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
+        if not self.training:
+            target["image_name"] = data_path
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)
@@ -114,7 +133,9 @@ class Dataset(object):
 
 
 if __name__  ==  "__main__":
-    ds = Dataset("./datasets/Rock/data/")
-    image_mean, image_std, image_max, image_min = ds.imageStat()
-    image, target = ds[3]
-    ds.show(10)
+    #ds = Dataset("./datasets/Rock/data/")
+    ds = Dataset("./datasets/Rock/mult/")
+    # image_mean, image_std, image_max, image_min = ds.imageStat()
+    image, target = ds[0]
+    print(image.shape)
+    print(target)
