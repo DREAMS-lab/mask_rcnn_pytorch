@@ -8,7 +8,7 @@ import transforms as T
 from engine import train_one_epoch, evaluate
 import utils
 import torch
-from rock import Dataset
+from rock_c3 import Dataset
 from model import get_rock_model_instance_segmentation
 
 import os
@@ -62,19 +62,17 @@ def get_mean_std(input_channel, image_mean, image_std):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:1')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
 
     input_c = 4
     dataset_test = Dataset("./datasets/Rock/mult_10/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
-    # dataset = Dataset("./datasets/Rock_test/mult/", transforms=get_transform(train=True), input_channel=8)
-    # image_mean, image_std, _, _ = dataset.imageStat()
-    image_mean = [0.23924888725523394, 0.2180423480395164, 0.2118836715688813, 0.26721142156890876, 0.32996910784324385,
-                  0.1461123186277879, 0.5308107499991753, 0.28652559313771186]
-    image_std = [0.1459739643338365, 0.1311105424825076, 0.12715888419418298, 0.149469170605332, 0.15553466224696225,
-                 0.10533129832132752, 0.24088403135495345, 0.24318892151508417]
+    dataset = Dataset("./datasets/Rock_test/mult/", transforms=get_transform(train=True), input_channel=input_c)
+    image_mean, image_std, _, _ = dataset.imageStat()
+    # image_mean = [0.23924888725523394, 0.2180423480395164, 0.2118836715688813, 0.26721142156890876, 0.32996910784324385, 0.1461123186277879, 0.5308107499991753, 0.28652559313771186]
+    # image_std = [0.1459739643338365, 0.1311105424825076, 0.12715888419418298, 0.149469170605332, 0.15553466224696225, 0.10533129832132752, 0.24088403135495345, 0.24318892151508417]
     image_mean, image_std = get_mean_std(input_c, image_mean, image_std)
 
     data_loader_test = torch.utils.data.DataLoader(
@@ -87,7 +85,7 @@ if __name__ == '__main__':
 
     mask_rcnn.eval()
 
-    mask_rcnn.load_state_dict(torch.load("trained_param_4/epoch_0005.param"))
+    mask_rcnn.load_state_dict(torch.load("trained_param_c4_4/epoch_0039.param"))
 
     # test_performance(mask_rcnn, data_loader_test, device, "trained_param_8")
 
@@ -122,7 +120,7 @@ if __name__ == '__main__':
         #visualize_result(mask_rcnn, data)
         #visualize_pred(image, pred)
 
-    with open("./datasets/Rock/mult_rocks_4.pickle", 'wb') as filehandle:
+    with open("./datasets/Rock/mult_rocks_5_2.pickle", 'wb') as filehandle:
         pickle.dump(instances, filehandle)
 
 

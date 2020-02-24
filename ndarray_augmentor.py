@@ -54,7 +54,7 @@ def sample(image, rotation_min, rotation_max, fliplr, flipud, zoom_min, zoom_max
 
     return image
 
-def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1):
+def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1, input_c=6):
     c = 0
     npy_files = [os.path.join(npy_path, f) for f in os.listdir(npy_path) if f.endswith('.npy')]
     while c < batch_number:
@@ -62,8 +62,8 @@ def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=F
             data = np.load(npy_file)
             data = sample(data, rotation_min, rotation_max, fliplr, flipud, zoom_min, zoom_max)
             unid = uuid.uuid4().hex
-            image = data[:, :, :8]
-            masks = data[:, :, 8:]
+            image = data[:, :, :input_c]
+            masks = data[:, :, input_c:]
             num_objs = masks.shape[2]
             print(masks.shape[2])
             for i in reversed(range(num_objs)):
@@ -93,7 +93,7 @@ def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=F
 
 if __name__ == '__main__':
     config = dict(
-        batch_number=2,
+        batch_number=120,
         rotation_min=-90,
         rotation_max=90,
         fliplr=True,
@@ -101,5 +101,5 @@ if __name__ == '__main__':
         zoom_min=0.8,
         zoom_max=1.2)
 
-    npy_path = './datasets/Rock/data_test/'
+    npy_path = './datasets/C3/aug/'
     augmentor(npy_path, **config)
