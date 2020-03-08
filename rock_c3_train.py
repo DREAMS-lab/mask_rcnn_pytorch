@@ -89,7 +89,7 @@ if __name__ == '__main__':
                                                    step_size=8,
                                                    gamma=0.1)
     init_epoch = 0
-    num_epochs = 32
+    num_epochs = 20
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
         # train for one epoch, printing every 10 iterations

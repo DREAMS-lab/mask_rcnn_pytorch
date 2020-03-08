@@ -92,12 +92,15 @@ if __name__ == '__main__':
     num_epochs = 10
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
+        """
         # train for one epoch, printing every 10 iterations
         train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
         # update the learning rate
         lr_scheduler.step()
+        """
+        mask_rcnn.load_state_dict(torch.load("trained_param_c3_6/epoch_000%d.param" % epoch))
         # evaluate on the test dataset
         evaluate(mask_rcnn, data_loader_test, device=device)
 
-        save_param = "trained_param_c3_6/epoch_{:04d}.param".format(epoch)
-        torch.save(mask_rcnn.state_dict(), save_param)
+        #save_param = "trained_param_c3_6/epoch_{:04d}.param".format(epoch)
+        #torch.save(mask_rcnn.state_dict(), save_param)

@@ -41,15 +41,17 @@ def get_mean_std(input_channel, image_mean, image_std):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:1')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
 
-    input_c = 4
+    input_c = 8
     # use our dataset and defined transformations
     dataset = Dataset("./datasets/Rock/data/", transforms=get_transform(train=True), include_name=False, input_channel=input_c)
-    dataset_test = Dataset("./datasets/Rock/data_test/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
+    ##dataset_test = Dataset("./datasets/Rock/data_test/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
+    #dataset_test = Dataset("./datasets/Rock_test/mult/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
+    dataset_test = Dataset("./datasets/Rock_test/all_rocks/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
     # image_mean, image_std, _, _ = dataset.imageStat()
     image_mean = [0.23924888725523394, 0.2180423480395164, 0.2118836715688813, 0.26721142156890876, 0.32996910784324385,
                   0.1461123186277879, 0.5308107499991753, 0.28652559313771186]
@@ -66,7 +68,7 @@ if __name__ == '__main__':
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=4, shuffle=True, num_workers=4,
+        dataset, batch_size=4, shuffle=True, num_workers=8,
         collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
@@ -88,18 +90,43 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(params, lr=0.001, momentum=0.9, weight_decay=0.0005)
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=10,
+                                                   step_size=8,
                                                    gamma=0.1)
     init_epoch = 0
     num_epochs = 40
 
+    '''
     for epoch in range(init_epoch, init_epoch + num_epochs):
+        save_param = "trained_param_6_fresh/epoch_{:04d}.param".format(epoch)
+        torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
+        #print('\n')
+        #print("trained_param_4/epoch_00%02d.param" % epoch)
+        #mask_rcnn.load_state_dict(torch.load("trained_param_4/epoch_00%02d.param" % epoch))
         evaluate(mask_rcnn, data_loader_test, device=device)
 
-        save_param = "trained_param_4/epoch_{:04d}.param".format(epoch)
+        #save_param = "trained_param_8_fresh/epoch_{:04d}.param".format(epoch)
         torch.save(mask_rcnn.state_dict(), save_param)
+    '''
+
+    for epoch in range(init_epoch, init_epoch + num_epochs):
+        #save_param = "trained_param_3_fresh/epoch_{:04d}.param".format(epoch)
+        #torch.save(mask_rcnn.state_dict(), save_param)
+        # train for one epoch, printing every 10 iterations
+        #train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
+        # update the learning rate
+        #lr_scheduler.step()
+        # evaluate on the test dataset
+        print('\n')
+        name = "trained_param_8/epoch_00%02d.param" % epoch
+        print(name)
+        mask_rcnn.load_state_dict(torch.load(name))
+        evaluate(mask_rcnn, data_loader_test, device=device)
+
+        #save_param = "trained_param_8_fresh/epoch_{:04d}.param".format(epoch)
+        #torch.save(mask_rcnn.state_dict(), save_param)
+    #'''

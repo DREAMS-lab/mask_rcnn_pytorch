@@ -62,7 +62,7 @@ def get_mean_std(input_channel, image_mean, image_std):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:1')
+    device = torch.device('cuda:0')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
@@ -91,8 +91,8 @@ if __name__ == '__main__':
 
     instances = []
 
-    #'''
-    init_epoch = 0
+    '''
+    init_epoch = 10
     num_epochs = 25
     
     for epoch in range(init_epoch, init_epoch + num_epochs):
@@ -102,13 +102,13 @@ if __name__ == '__main__':
         # update the learning rate
         lr_scheduler.step()
         """
-        print("trained_param_c3_3/epoch_00%02d.param" % epoch)
-        mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_00%02d.param" % epoch))
+        print("trained_param_c3_4/epoch_00%02d.param" % epoch)
+        mask_rcnn.load_state_dict(torch.load("trained_param_c3_4/epoch_00%02d.param" % epoch))
         # evaluate on the test dataset
         evaluate(mask_rcnn, data_loader_test, device=device)
     '''
 
-    mask_rcnn.load_state_dict(torch.load("trained_param_c3_6/epoch_0004.param"))
+    mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_0018.param"))
     #mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_0002.param"))
 
     f = 0
@@ -144,15 +144,15 @@ if __name__ == '__main__':
         #visualize_result(mask_rcnn, data)
         #visualize_pred(image, pred)
         if len(instances) >= 30000:
-            name = "./datasets/C3/rocks_c3_6_%02d.pickle" % f
+            name = "./datasets/C3/rocks_c3_3_18_%02d.pickle" % f
             f += 1
             with open(name, 'wb') as filehandle:
                 pickle.dump(instances, filehandle)
                 instances = []
 
-    name = "./datasets/C3/rocks_c3_6_%02d.pickle" % f
+    name = "./datasets/C3/rocks_c3_3_18_%02d.pickle" % f
     with open(name, 'wb') as filehandle:
         pickle.dump(instances, filehandle)
     
-    '''
+    #'''
 

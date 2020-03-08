@@ -62,12 +62,12 @@ def get_mean_std(input_channel, image_mean, image_std):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:1')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
 
-    input_c = 4
+    input_c = 3
     dataset_test = Dataset("./datasets/Rock/mult_10/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
     # dataset = Dataset("./datasets/Rock_test/mult/", transforms=get_transform(train=True), input_channel=8)
     # image_mean, image_std, _, _ = dataset.imageStat()
@@ -77,9 +77,9 @@ if __name__ == '__main__':
                  0.10533129832132752, 0.24088403135495345, 0.24318892151508417]
     image_mean, image_std = get_mean_std(input_c, image_mean, image_std)
 
-    data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, shuffle=False, num_workers=2,
-        collate_fn=utils.collate_fn)
+    loader = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=2,
+                                         collate_fn=utils.collate_fn)
+    data_loader_test = loader
 
     mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=input_c, image_mean=image_mean, image_std=image_std)
     # move model to the right device
@@ -87,12 +87,13 @@ if __name__ == '__main__':
 
     mask_rcnn.eval()
 
-    mask_rcnn.load_state_dict(torch.load("trained_param_4/epoch_0005.param"))
+    mask_rcnn.load_state_dict(torch.load("trained_param_3/epoch_0005.param"))
 
     # test_performance(mask_rcnn, data_loader_test, device, "trained_param_8")
-
+    f = 0
     instances = []
-    for data in dataset_test:
+    for i, data in enumerate(dataset_test):
+        print(i)
         image, target = data
         pred = mask_rcnn(image.unsqueeze(0).to(device))[0]
 
@@ -122,7 +123,14 @@ if __name__ == '__main__':
         #visualize_result(mask_rcnn, data)
         #visualize_pred(image, pred)
 
-    with open("./datasets/Rock/mult_rocks_4.pickle", 'wb') as filehandle:
-        pickle.dump(instances, filehandle)
+        if len(instances) >= 20000:
+            name = "./datasets/Rock/rocks_3_05_%02d.pickle" % f
+            f += 1
+            with open(name, 'wb') as filehandle:
+                pickle.dump(instances, filehandle)
+                instances = []
 
+    name = "./datasets/Rock/rocks_3_05_%02d.pickle" % f
+    with open(name, 'wb') as filehandle:
+        pickle.dump(instances, filehandle)
 
