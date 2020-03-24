@@ -21,12 +21,14 @@ def get_transform(train):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device('cuda:0')
 
     # our dataset has three classes only - background, non-damaged, and damaged
-    num_classes = 3
+    # background, nd, d0, d1, d2, d3
+    num_classes = 6
     # use our dataset and defined transformations
-    dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False)
-    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels_test/", get_transform(train=False), readsave=False)
+    dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False, include_name=False)
+    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), readsave=False, include_name=False)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -36,7 +38,7 @@ if __name__ == '__main__':
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=2, shuffle=True, num_workers=4,
+        dataset, batch_size=4, shuffle=True, num_workers=4,
         collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
@@ -59,12 +61,15 @@ if __name__ == '__main__':
                                 momentum=0.9, weight_decay=0.00001)
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=3,
+                                                   step_size=20,
                                                    gamma=0.1)
+
     init_epoch = 0
     num_epochs = 100
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
+        save_param = "trained_param_eureka_bin/epoch_{:04d}.param".format(epoch)
+        #torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
         # update the learning rate
@@ -72,7 +77,6 @@ if __name__ == '__main__':
         # evaluate on the test dataset
         evaluate(mask_rcnn, data_loader_test, device=device)
 
-        save_param = "trained_param/epoch_{:04d}.param".format(epoch)
         torch.save(mask_rcnn.state_dict(), save_param)
 
 """

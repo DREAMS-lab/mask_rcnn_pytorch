@@ -23,14 +23,16 @@ import pickle
 """
 
 class Dataset(object):
-    def __init__(self, image_path, label_path, transforms=None, readsave=True):
+    def __init__(self, image_path, label_path, transforms=None, readsave=True, include_name=True):
         self.image_path = image_path
         self.label_path = label_path
         self.transforms = transforms
         self.images = os.listdir(image_path)
         self.masks = [f for f in os.listdir(label_path) if f.endswith("nd.npy")]
         self.classes = [f for f in os.listdir(label_path) if f.endswith("cls.npy")]
+        self.include_name = include_name
         self.__refine(readsave)
+
 
     def __refine(self, readsave):
         """
@@ -80,6 +82,7 @@ class Dataset(object):
         obj_ids = np.load(cls_path)
         masks = np.load(mask_path)
         masks = masks == 255  # convert to binary masks
+        masks = masks.astype(np.uint8)
 
         num_objs = obj_ids.shape[-1]
         boxes = []
@@ -110,7 +113,8 @@ class Dataset(object):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
-        target["image_name"] = img_path
+        if self.include_name:
+            target["image_name"] = img_path
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)
@@ -120,6 +124,7 @@ class Dataset(object):
     def __getitem__(self, idx):
         image, target = self.__getitem(idx)
         labels = target["labels"]
+        #labels = labels + 1 # multiple classes
         labels = (labels > 0).type(torch.int64) + 1  # only two classes, non-damaged and damaged
         target["labels"] = labels
         return image, target
@@ -130,9 +135,9 @@ class Dataset(object):
 
     def display(self, idx):
         image, target = self.__getitem__(idx)
-        image = image.permute((1, 2, 0))
-        image = (image.numpy() * 255).astype(np.uint8)
-        image = Image.fromarray(image)
+        #image = image.permute((1, 2, 0))
+        #image = (image.numpy() * 255).astype(np.uint8)
+        #image = Image.fromarray(image)
         image.show()
 
         masks = target["masks"]
@@ -143,9 +148,9 @@ class Dataset(object):
         masks.show()
 
 if __name__  ==  "__main__":
-    ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=False)
-    image, target = ds[23]
+    ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=True)
+    id = 26
+    image, target = ds[id]
     image = np.array(image)
-    print(image)
-    print(image.shape)
-    print(target)
+    ds.display(id)
+    print(target['labels'])
