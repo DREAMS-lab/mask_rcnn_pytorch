@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import uuid
+import copy
 
 
 def rotateImage(image, angle):
@@ -91,9 +92,82 @@ def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=F
 
         c += 1
 
+def balanced_augmentor(image_path, label_path, aug_path, augmentation_batch=1, augmentation_ratio=[],
+                       rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1):
+
+    image_files = [os.path.join(image_path, f) for f in os.listdir(image_path) if f.endswith('.jpg')]
+    while augmentation_batch:
+        augmentation_batch -= 1
+        for image_file in image_files:
+            f_name = image_file.split('/')[-1][:-4]
+            mask_file = os.path.join(label_path, f_name + "_nd.npy")
+            cls_file = os.path.join(label_path, f_name + "_cls.npy")
+
+            if not os.path.isfile(mask_file):
+                continue
+            if not os.path.isfile(cls_file):
+                continue
+
+            image = cv2.imread(image_file)
+            masks = np.load(mask_file)
+            clses = np.load(cls_file)  # cls should start with 0, e.g. [0, 1, 2, 3, ...]
+            image_mask = np.concatenate((image, masks), axis=2)
+
+            n = augmentation_ratio[int(clses.max())]
+            for _ in range(n):
+                data = copy.deepcopy(image_mask)
+                data = sample(data, rotation_min, rotation_max, fliplr, flipud, zoom_min, zoom_max)
+                image = data[:, :, :3]
+                masks = data[:, :, 3:]
+                cls = copy.deepcopy(clses)
+
+                if masks.max() < 0.1:
+                    continue
+
+                print(masks.shape[2])
+                num_objs = masks.shape[2]
+                for i in reversed(range(num_objs)):
+                    mask = masks[:, :, i]
+                    if mask.max() < 250:
+                        masks = np.delete(masks, i, axis=2)
+                        cls = np.delete(cls, i)
+                        continue
+
+                    mask = mask >= 250
+                    pos = np.where(mask)
+                    xmin = np.min(pos[1])
+                    xmax = np.max(pos[1])
+                    ymin = np.min(pos[0])
+                    ymax = np.max(pos[0])
+                    if xmin >= xmax:
+                        masks = np.delete(masks, i, axis=2)
+                        cls = np.delete(cls, i)
+                        continue
+                    if ymin >= ymax:
+                        masks = np.delete(masks, i, axis=2)
+                        cls = np.delete(cls, i)
+                        continue
+
+                if masks.shape[2] == 0:
+                    continue
+
+
+                print(masks.shape[2])
+                print('\n')
+                unid = uuid.uuid4().hex
+
+                new_mask_file = os.path.join(aug_path, f_name + "_" + unid + "_nd.npy")
+                new_cls_file = os.path.join(aug_path, f_name + "_" + unid + "_cls.npy")
+                new_image_file = os.path.join(aug_path, f_name + "_" + unid + ".jpg")
+
+                np.save(new_mask_file, masks)
+                np.save(new_cls_file, cls)
+                cv2.imwrite(new_image_file, image)
+
+
 if __name__ == '__main__':
     config = dict(
-        batch_number=120,
+        batch_number=1,
         rotation_min=-90,
         rotation_max=90,
         fliplr=True,
@@ -101,5 +175,16 @@ if __name__ == '__main__':
         zoom_min=0.8,
         zoom_max=1.2)
 
-    npy_path = './datasets/C3/aug/'
-    augmentor(npy_path, **config)
+    config = dict(
+        augmentation_batch=2,
+        augmentation_ratio=[1, 3, 15, 50, 100],
+        rotation_min=-90,
+        rotation_max=90,
+        fliplr=True,
+        flipud=True,
+        zoom_min=0.8,
+        zoom_max=1.2)
+    image_path = './datasets/Eureka/images/'
+    label_path = './datasets/Eureka/labels/'
+    aug_path = './datasets/Eureka/aug/'
+    balanced_augmentor(image_path, label_path, aug_path, **config)

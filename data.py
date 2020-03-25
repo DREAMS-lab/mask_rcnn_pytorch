@@ -23,14 +23,15 @@ import pickle
 """
 
 class Dataset(object):
-    def __init__(self, image_path, label_path, transforms=None, readsave=True, include_name=True):
+    def __init__(self, image_path, label_path, transforms=None, savePickle=True, readsave=True, include_name=True):
         self.image_path = image_path
         self.label_path = label_path
         self.transforms = transforms
-        self.images = os.listdir(image_path)
+        self.images = [f for f in os.listdir(image_path) if f.endswith(".jpg")]
         self.masks = [f for f in os.listdir(label_path) if f.endswith("nd.npy")]
         self.classes = [f for f in os.listdir(label_path) if f.endswith("cls.npy")]
         self.include_name = include_name
+        self.savePickle = savePickle
         self.__refine(readsave)
 
 
@@ -60,8 +61,9 @@ class Dataset(object):
             self.masks = masks
             self.classes = classes
             data = {"images": images, "masks": masks, "classes": classes}
-            with open('data.pickle', 'wb') as filehandle:
-                pickle.dump(data, filehandle)
+            if self.savePickle:
+                with open('data.pickle', 'wb') as filehandle:
+                    pickle.dump(data, filehandle)
         else:
             with open('data.pickle', 'rb') as filehandle:
                 data = pickle.load(filehandle)
@@ -148,8 +150,9 @@ class Dataset(object):
         masks.show()
 
 if __name__  ==  "__main__":
-    ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=True)
-    id = 26
+    #ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=True)
+    ds = Dataset("./datasets/Eureka/aug/", "./datasets/Eureka/aug/", readsave=True)
+    id = 0
     image, target = ds[id]
     image = np.array(image)
     ds.display(id)
