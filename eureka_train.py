@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # background, nd, d0, d1, d2, d3
     num_classes = 6
     # use our dataset and defined transformations
-    dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False, include_name=False)
-    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), readsave=False, include_name=False)
+    dataset = Dataset("./datasets/Eureka/aug/", "./datasets/Eureka/aug/", get_transform(train=True), readsave=False, include_name=False)
+    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), savePickle=False, readsave=False, include_name=False)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -68,8 +68,8 @@ if __name__ == '__main__':
     num_epochs = 100
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
-        save_param = "trained_param_eureka_bin/epoch_{:04d}.param".format(epoch)
-        #torch.save(mask_rcnn.state_dict(), save_param)
+        save_param = "trained_param_eureka_aug_bin/epoch_{:04d}.param".format(epoch)
+        torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
         # update the learning rate

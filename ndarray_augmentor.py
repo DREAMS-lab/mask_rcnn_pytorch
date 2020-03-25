@@ -139,11 +139,8 @@ def balanced_augmentor(image_path, label_path, aug_path, augmentation_batch=1, a
                     xmax = np.max(pos[1])
                     ymin = np.min(pos[0])
                     ymax = np.max(pos[0])
-                    if xmin >= xmax:
-                        masks = np.delete(masks, i, axis=2)
-                        cls = np.delete(cls, i)
-                        continue
-                    if ymin >= ymax:
+
+                    if (xmin >= xmax) | (ymin >= ymax):
                         masks = np.delete(masks, i, axis=2)
                         cls = np.delete(cls, i)
                         continue
@@ -151,6 +148,8 @@ def balanced_augmentor(image_path, label_path, aug_path, augmentation_batch=1, a
                 if masks.shape[2] == 0:
                     continue
 
+                if masks.max() == 0:
+                    continue
 
                 print(masks.shape[2])
                 print('\n')
