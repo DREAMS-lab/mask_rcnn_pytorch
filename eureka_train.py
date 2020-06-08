@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # background, nd, d0, d1, d2, d3
     num_classes = 6
     # use our dataset and defined transformations
-    dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False, include_name=False)
-    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), readsave=False, include_name=False)
+    dataset = Dataset("./datasets/Eureka/aug/", "./datasets/Eureka/aug/", get_transform(train=True), readsave=True, include_name=False)
+    dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), savePickle=False,readsave=False, include_name=False)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     read_param = False
     if read_param:
-        mask_rcnn.load_state_dict(torch.load("trained_param/epoch_0001.param"))
+        mask_rcnn.load_state_dict(torch.load("trained_param_eureka_aug_bin/epoch_0009.param"))
 
     # move model to the right device
     mask_rcnn.to(device)
@@ -61,14 +61,14 @@ if __name__ == '__main__':
                                 momentum=0.9, weight_decay=0.00001)
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=20,
+                                                   step_size=10,
                                                    gamma=0.1)
 
     init_epoch = 0
-    num_epochs = 100
+    num_epochs = 40
 
     for epoch in range(init_epoch, init_epoch + num_epochs):
-        save_param = "trained_param_eureka_bin/epoch_{:04d}.param".format(epoch)
+        save_param = "trained_param_eureka_aug_mult/epoch_{:04d}.param".format(epoch)
         #torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)

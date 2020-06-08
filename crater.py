@@ -1,5 +1,5 @@
 """
-data.py
+crater.py
 Zhiang Chen, Dec 24 2019
 data class for mask rcnn
 """
@@ -27,9 +27,8 @@ class Dataset(object):
         self.image_path = image_path
         self.label_path = label_path
         self.transforms = transforms
-        self.images = [f for f in os.listdir(image_path) if f.endswith(".jpg")]
-        self.masks = [f for f in os.listdir(label_path) if f.endswith("nd.npy")]
-        self.classes = [f for f in os.listdir(label_path) if f.endswith("cls.npy")]
+        self.images = [f for f in os.listdir(image_path) if f.endswith(".png")]
+        self.masks = [f for f in os.listdir(label_path) if f.endswith(".npy")]
         self.include_name = include_name
         self.savePickle = savePickle
         self.__refine(readsave)
@@ -44,23 +43,19 @@ class Dataset(object):
         if not readsave:
             images = []
             masks = []
-            classes = []
             for img in self.images:
                 frame = img[:-4]
-                mask = frame + "_nd.npy"
-                cls = frame + "_cls.npy"
+                mask = frame + ".npy"
                 if mask in self.masks:
-                    if cls in self.classes:
-                        mask_path = os.path.join(self.label_path, mask)
-                        mask_nd = np.load(mask_path)
-                        if mask_nd.max() > 0:
-                            images.append(img)
-                            masks.append(mask)
-                            classes.append(cls)
+                    mask_path = os.path.join(self.label_path, mask)
+                    mask_nd = np.load(mask_path)
+                    if mask_nd.max() > 0:
+                        images.append(img)
+                        masks.append(mask)
+
             self.images = images
             self.masks = masks
-            self.classes = classes
-            data = {"images": images, "masks": masks, "classes": classes}
+            data = {"images": images, "masks": masks,}
             if self.savePickle:
                 with open('data.pickle', 'wb') as filehandle:
                     pickle.dump(data, filehandle)
@@ -69,24 +64,21 @@ class Dataset(object):
                 data = pickle.load(filehandle)
                 self.images = data["images"]
                 self.masks = data["masks"]
-                self.classes = data["classes"]
 
 
     def __getitem(self, idx):
         img_path = os.path.join(self.image_path, self.images[idx])
         mask_path = os.path.join(self.label_path, self.masks[idx])
-        cls_path = os.path.join(self.label_path, self.classes[idx])
 
         image = Image.open(img_path).convert("RGB")
-        image = image.resize((1000, 1000))
+        image = image.resize((500, 500))
         # 0 encoding non-damaged is supposed to be 1 for training.
         # In training, 0 is of background
-        obj_ids = np.load(cls_path)
         masks = np.load(mask_path)
-        masks = masks == 255  # convert to binary masks
+        masks = masks > 0  # convert to binary masks
         masks = masks.astype(np.uint8)
-
-        num_objs = obj_ids.shape[-1]
+        num_objs = masks.shape[2]
+        obj_ids = np.ones(num_objs)
         boxes = []
         for i in range(num_objs):
             pos = np.where(masks[:, :, i])
@@ -126,7 +118,7 @@ class Dataset(object):
     def __getitem__(self, idx):
         image, target = self.__getitem(idx)
         labels = target["labels"]
-        labels = labels + 1 # multiple classes
+        #labels = labels + 1 # multiple classes
         #labels = (labels > 0).type(torch.int64) + 1  # only two classes, non-damaged and damaged
         target["labels"] = labels
         return image, target
@@ -149,9 +141,19 @@ class Dataset(object):
         masks = Image.fromarray(masks)
         masks.show()
 
+    def imageStat(self):
+        images = np.empty((0, 3), float)
+        for data_file in self.images:
+            data_path = os.path.join(self.image_path, data_file)
+            data = cv2.imread(data_path)
+            image = data.astype(float).reshape(-1, 3)/255.0
+            images = np.append(images, image, axis=0)
+        return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
+               np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
+
 if __name__  ==  "__main__":
     #ds = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", readsave=True)
-    ds = Dataset("./datasets/Eureka/aug/", "./datasets/Eureka/aug/", readsave=True)
+    ds = Dataset("./datasets/Crater/aug/", "./datasets/Crater/aug/", readsave=True, savePickle=False)
     id = 0
     image, target = ds[id]
     image = np.array(image)

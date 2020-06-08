@@ -120,18 +120,30 @@ class Dataset(object):
             if len(data_file.split('_'))==2:
                 data_path = os.path.join(self.data_path, data_file)
                 data = np.load(data_path)
+                print(data.shape)
                 image = data[:, :, :6].astype(float).reshape(-1, 6)/255.0
                 images = np.append(images, image, axis=0)
         return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
                np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
 
 
-
+    def imageStat2(self):
+        images = np.empty((0, 3), float)
+        import random
+        random.shuffle(self.data_files)
+        for data_file in self.data_files[:40]:
+            if True:
+                data_path = os.path.join(self.data_path, data_file)
+                data = np.load(data_path)
+                image = data[:, :, :3].astype(float).reshape(-1, 3)/255.0
+                images = np.append(images, image, axis=0)
+        return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
+               np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
 
 
 if __name__  ==  "__main__":
     #ds = Dataset("./datasets/Rock/data/")
-    ds = Dataset("./datasets/C3/rocks/",input_channel=6)
+    ds = Dataset("./datasets/hypolith_sample_set_throop/npy",input_channel=3)
     # image_mean, image_std, image_max, image_min = ds.imageStat()
 
 
@@ -144,3 +156,4 @@ if __name__  ==  "__main__":
     image, target = ds[id]
     print(target['image_name'])
     ds.show(id)
+    print(ds.imageStat2())

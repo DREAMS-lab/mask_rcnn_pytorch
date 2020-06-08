@@ -12,10 +12,10 @@ from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from torchvision.models.detection.rpn import AnchorGenerator
 from visualize import *
 
-def get_model_instance_segmentation(num_classes):
+def get_model_instance_segmentation(num_classes, image_mean, image_std, stats=False):
     # load an instance segmentation model pre-trained pre-trained on COCO
     #model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
-    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=False)
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
 
     # get number of input features for the classifier
     in_features = model.roi_heads.box_predictor.cls_score.in_features
@@ -27,6 +27,9 @@ def get_model_instance_segmentation(num_classes):
                                        aspect_ratios=((0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0)))
     model.rpn.anchor_generator = anchor_generator
 
+    if stats:
+        model.transform.image_mean = image_mean
+        model.transform.image_std = image_std
     # now get the number of input features for the mask classifier
     in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
     hidden_layer = 256
@@ -34,6 +37,7 @@ def get_model_instance_segmentation(num_classes):
     model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask,
                                                        hidden_layer,
                                                        num_classes)
+    model.roi_heads.detections_per_img = 256
 
     return model
 
@@ -92,7 +96,7 @@ def visualize_pred(image, pred):
     labels = pred["labels"].cpu().detach().numpy()
     scores = pred["scores"].cpu().detach().numpy()
     masks = pred["masks"]
-    indices = scores > 0.50
+    indices = scores > 0.
     boxes = boxes[indices]
     labels = labels[indices]
     scores = scores[indices]
@@ -100,7 +104,7 @@ def visualize_pred(image, pred):
     masks = (masks.permute((1, 2, 0)).cpu().detach().numpy() > 0.5).astype(np.uint8)
     image = image.permute((1, 2, 0)).cpu().detach().numpy()*255
     #return display_instances(image, boxes, masks, labels, class_names=["background", "non-damaged", "damaged"], scores=scores)
-    return display_instances(image, boxes, masks, labels, class_names=["background", "rock"], scores=scores)
+    return display_instances(image, boxes, masks, labels, class_names=["background", "crater"], scores=scores)
 
 def visualize_gt(image, target):
     if image.shape[0] == 3:
@@ -116,7 +120,7 @@ def visualize_gt(image, target):
     print(boxes.shape)
     print(masks.shape)
     print(labels.shape)
-    return display_instances(image, boxes, masks, labels, class_names=["background", "rock"])
+    return display_instances(image, boxes, masks, labels, class_names=["background", "crater"])
 
 def visualize_result(model, data):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

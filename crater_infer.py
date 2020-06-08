@@ -8,8 +8,8 @@ import transforms as T
 from engine import train_one_epoch, evaluate
 import utils
 import torch
-from rock_c3 import Dataset
-from model import get_rock_model_instance_segmentation
+from crater import Dataset
+from model import get_model_instance_segmentation
 
 import os
 from shutil import copyfile
@@ -21,6 +21,7 @@ from model import visualize_pred
 class ToTensor(object):
     def __call__(self, image, target):
         # image = F.to_tensor(image).float()
+        image = np.array(image)
         image = torch.from_numpy(image / 255.0).float()
         image = image.permute((2, 0, 1))
         return image, target
@@ -68,17 +69,18 @@ if __name__ == '__main__':
     num_classes = 2
 
     input_c = 3
-    dataset_infer = Dataset("./datasets/C3/rgbd/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
-    dataset_test = Dataset("./datasets/C3_test/all_rocks/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
-    dataset = Dataset("./datasets/C3/aug/", transforms=get_transform(train=True), input_channel=input_c)
-    image_mean, image_std, _, _ = dataset.imageStat()
-    # image_mean = [0.23924888725523394, 0.2180423480395164, 0.2118836715688813, 0.26721142156890876, 0.32996910784324385, 0.1461123186277879, 0.5308107499991753, 0.28652559313771186]
-    # image_std = [0.1459739643338365, 0.1311105424825076, 0.12715888419418298, 0.149469170605332, 0.15553466224696225, 0.10533129832132752, 0.24088403135495345, 0.24318892151508417]
+    dataset_test = Dataset("./datasets/Rock/mult_10/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
+    # dataset = Dataset("./datasets/Rock_test/mult/", transforms=get_transform(train=True), input_channel=8)
+    # image_mean, image_std, _, _ = dataset.imageStat()
+    image_mean = [0.23924888725523394, 0.2180423480395164, 0.2118836715688813, 0.26721142156890876, 0.32996910784324385,
+                  0.1461123186277879, 0.5308107499991753, 0.28652559313771186]
+    image_std = [0.1459739643338365, 0.1311105424825076, 0.12715888419418298, 0.149469170605332, 0.15553466224696225,
+                 0.10533129832132752, 0.24088403135495345, 0.24318892151508417]
     image_mean, image_std = get_mean_std(input_c, image_mean, image_std)
 
-    data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, shuffle=False, num_workers=2,
-        collate_fn=utils.collate_fn)
+    loader = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=2,
+                                         collate_fn=utils.collate_fn)
+    data_loader_test = loader
 
     mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=input_c, image_mean=image_mean, image_std=image_std)
     # move model to the right device
@@ -86,34 +88,12 @@ if __name__ == '__main__':
 
     mask_rcnn.eval()
 
+    mask_rcnn.load_state_dict(torch.load("trained_param_3/epoch_0005.param"))
 
     # test_performance(mask_rcnn, data_loader_test, device, "trained_param_8")
-
-    instances = []
-
-    '''
-    init_epoch = 0
-    num_epochs = 25
-    
-    for epoch in range(init_epoch, init_epoch + num_epochs):
-        """
-        # train for one epoch, printing every 10 iterations
-        train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=100)
-        # update the learning rate
-        lr_scheduler.step()
-        """
-        print("trained_param_c3_3/epoch_00%02d.param" % epoch)
-        mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_00%02d.param" % epoch))
-        # evaluate on the test dataset
-        evaluate(mask_rcnn, data_loader_test, device=device)
-    '''
-
-    mask_rcnn.load_state_dict(torch.load("trained_param_c3_6/epoch_0004.param"))
-    #mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_0002.param"))
-
     f = 0
-
-    for i, data in enumerate(dataset_infer):
+    instances = []
+    for i, data in enumerate(dataset_test):
         print(i)
         image, target = data
         pred = mask_rcnn(image.unsqueeze(0).to(device))[0]
@@ -143,16 +123,15 @@ if __name__ == '__main__':
 
         #visualize_result(mask_rcnn, data)
         #visualize_pred(image, pred)
-        if len(instances) >= 30000:
-            name = "./datasets/C3/rocks_c3_6_%02d.pickle" % f
+
+        if len(instances) >= 20000:
+            name = "./datasets/Rock/rocks_3_05_%02d.pickle" % f
             f += 1
             with open(name, 'wb') as filehandle:
                 pickle.dump(instances, filehandle)
                 instances = []
 
-    name = "./datasets/C3/rocks_c3_6_%02d.pickle" % f
+    name = "./datasets/Rock/rocks_3_05_%02d.pickle" % f
     with open(name, 'wb') as filehandle:
         pickle.dump(instances, filehandle)
-    
-    #'''
 

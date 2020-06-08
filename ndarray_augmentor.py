@@ -176,7 +176,7 @@ if __name__ == '__main__':
         zoom_max=1.2)
 
     config = dict(
-        augmentation_batch=2,
+        augmentation_batch=5,
         augmentation_ratio=[1, 3, 15, 50, 100],
         rotation_min=-90,
         rotation_max=90,
