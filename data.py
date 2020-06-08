@@ -57,6 +57,7 @@ class Dataset(object):
                             images.append(img)
                             masks.append(mask)
                             classes.append(cls)
+
             self.images = images
             self.masks = masks
             self.classes = classes
@@ -83,7 +84,7 @@ class Dataset(object):
         # In training, 0 is of background
         obj_ids = np.load(cls_path)
         masks = np.load(mask_path)
-        masks = masks == 255  # convert to binary masks
+        masks = masks > 0  # convert to binary masks
         masks = masks.astype(np.uint8)
 
         num_objs = obj_ids.shape[-1]
