@@ -10,6 +10,7 @@ import utils
 import torch
 from data import Dataset
 from model import get_model_instance_segmentation
+import os
 
 def get_transform(train):
     transforms = []
@@ -21,7 +22,7 @@ def get_transform(train):
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:1')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     # background, nd, d0, d1, d2, d3
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     # use our dataset and defined transformations
     dataset = Dataset("./datasets/Eureka/images/", "./datasets/Eureka/labels/", get_transform(train=True), readsave=False, include_name=False)
     dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels/", get_transform(train=False), savePickle=False,readsave=False, include_name=False)
-
+    print(len(dataset_test))
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
     dataset = torch.utils.data.Subset(dataset, indices)
@@ -69,28 +70,29 @@ if __name__ == '__main__':
 
     #save_param = "trained_param_eureka_mult/epoch_{:04d}.param".format(0)
     #torch.save(mask_rcnn.state_dict(), save_param)
-    
-    save_param = "trained_param_eureka_mult/epoch_{:04d}.param".format(25)
-    mask_rcnn.load_state_dict(torch.load(save_param))
-    evaluate(mask_rcnn, data_loader_test, device=device)
+    weight_path = "trained_param_eureka_mult"
+    weights = [f for f in os.listdir(weight_path) if f.endswith(".param")]
+    weights.sort()
 
-    """
-    for epoch in range(init_epoch, init_epoch + num_epochs):
-        save_param = "trained_param_eureka_mult/epoch_{:04d}.param".format(epoch)
+    for weight in weights:
+        weight_name = os.path.join(weight_path, weight)
+        mask_rcnn.load_state_dict(torch.load(weight_name))
+        print(weight_name)
+        #save_param = "trained_param_eureka_mult/epoch_{:04d}.param".format(epoch)
         #torch.save(mask_rcnn.state_dict(), save_param)
 
         #save_param = "trained_param_eureka_aug_bin/epoch_{:04d}.param".format(epoch)
         #torch.save(mask_rcnn.state_dict(), save_param)
 
         # train for one epoch, printing every 10 iterations
-        train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=500)
+        #train_one_epoch(mask_rcnn, optimizer, data_loader, device, epoch, print_freq=500)
         # update the learning rate
-        lr_scheduler.step()
+        #lr_scheduler.step()
         # evaluate on the test dataset
         evaluate(mask_rcnn, data_loader_test, device=device)
 
-        torch.save(mask_rcnn.state_dict(), save_param)
-    """
+        #torch.save(mask_rcnn.state_dict(), save_param)
+
 """
 num_classes = 3
 # use our dataset and defined transformations

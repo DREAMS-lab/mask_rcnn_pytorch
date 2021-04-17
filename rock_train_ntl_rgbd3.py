@@ -37,7 +37,7 @@ def get_mean_std(input_channel, image_mean, image_std):
         return image_mean[:3] + image_mean[-3:], image_std[:3] + image_mean[-3:]
     elif input_channel == 4:
         return image_mean[:3] + [np.mean(image_mean[-3:]).tolist()], image_std[:3] + [np.mean(image_std[-3:]).tolist()]
-    elif input_channel == -3:
+    elif input_channel == 'dem':
         return image_mean[-3:], image_std[-3:]
 
 if __name__ == '__main__':
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
 
-    input_c = 5
+    input_c = 6
     # use our dataset and defined transformations
     dataset = Dataset("./datasets/iros/bishop/aug/", transforms=get_transform(train=True), include_name=False, input_channel=input_c)
     ##dataset_test = Dataset("./datasets/Rock/data_test/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         dataset_test, batch_size=1, shuffle=False, num_workers=4,
         collate_fn=utils.collate_fn)
     # get the model using our helper function
-    mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=input_c, image_mean=image_mean, image_std=image_std, pretrained=True)
+    mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=input_c, image_mean=image_mean, image_std=image_std, pretrained=False)
 
     read_param = False
     if read_param:
@@ -90,17 +90,17 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(params, lr=0.01, momentum=0.9, weight_decay=0.0005)
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=8,
+                                                   step_size=10,
                                                    gamma=0.5)
     init_epoch = 0
-    num_epochs = 24
+    num_epochs = 50
 
-    save_param = "trained_param_bishop_tl_rgb_re_nir/epoch_{:04d}.param".format(init_epoch)
+    save_param = "trained_param_bishop_ntl_rgbd3/epoch_{:04d}.param".format(init_epoch)
     torch.save(mask_rcnn.state_dict(), save_param)
 
     #'''
     for epoch in range(init_epoch, init_epoch + num_epochs):
-        save_param = "trained_param_bishop_tl_rgb_re_nir/epoch_{:04d}.param".format(epoch)
+        save_param = "trained_param_bishop_ntl_rgbd3/epoch_{:04d}.param".format(epoch)
         #torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         print(save_param)

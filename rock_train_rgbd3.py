@@ -37,18 +37,18 @@ def get_mean_std(input_channel, image_mean, image_std):
         return image_mean[:3] + image_mean[-3:], image_std[:3] + image_mean[-3:]
     elif input_channel == 4:
         return image_mean[:3] + [np.mean(image_mean[-3:]).tolist()], image_std[:3] + [np.mean(image_std[-3:]).tolist()]
-    elif input_channel == -3:
+    elif input_channel == 'dem':
         return image_mean[-3:], image_std[-3:]
 
 if __name__ == '__main__':
     # train on the GPU or on the CPU, if a GPU is not available
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cuda:1')
+    device = torch.device('cuda:0')
 
     # our dataset has three classes only - background, non-damaged, and damaged
     num_classes = 2
 
-    input_c = 5
+    input_c = 6
     # use our dataset and defined transformations
     dataset = Dataset("./datasets/iros/bishop/aug/", transforms=get_transform(train=True), include_name=False, input_channel=input_c)
     ##dataset_test = Dataset("./datasets/Rock/data_test/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
@@ -95,12 +95,12 @@ if __name__ == '__main__':
     init_epoch = 0
     num_epochs = 24
 
-    save_param = "trained_param_bishop_tl_rgb_re_nir/epoch_{:04d}.param".format(init_epoch)
+    save_param = "trained_param_bishop_tl_rgbd3/epoch_{:04d}.param".format(init_epoch)
     torch.save(mask_rcnn.state_dict(), save_param)
 
     #'''
     for epoch in range(init_epoch, init_epoch + num_epochs):
-        save_param = "trained_param_bishop_tl_rgb_re_nir/epoch_{:04d}.param".format(epoch)
+        save_param = "trained_param_bishop_tl_rgbd3/epoch_{:04d}.param".format(epoch)
         #torch.save(mask_rcnn.state_dict(), save_param)
         # train for one epoch, printing every 10 iterations
         print(save_param)

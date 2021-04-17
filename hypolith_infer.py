@@ -8,15 +8,18 @@ import transforms as T
 from engine import train_one_epoch, evaluate
 import utils
 import torch
-from rock_c3 import Dataset
+from hypolith import Dataset
 from model import get_rock_model_instance_segmentation
 
 import os
 from shutil import copyfile
 import pickle
 import numpy as np
-from model import visualize_result
+from model import visualize_gt
 from model import visualize_pred
+import sys
+sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+import cv2
 
 class ToTensor(object):
     def __call__(self, image, target):
@@ -68,12 +71,12 @@ if __name__ == '__main__':
     num_classes = 2
 
     input_c = 3
-    dataset_infer = Dataset("./datasets/hypolith_sample_set_throop/npy/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
+    dataset_infer = Dataset("./datasets/hypolith/rgb_masks_test/", transforms=get_transform(train=False), include_name=True, input_channel=input_c)
     #dataset_test = Dataset("./datasets/C3_test/all_rocks/", transforms=get_transform(train=False), include_name=False, input_channel=input_c)
     #dataset = Dataset("./datasets/C3/aug/", transforms=get_transform(train=True), input_channel=input_c)
-    #image_mean, image_std, _, _ = dataset_infer.imageStat2()
-    image_mean = [0.44413754410888107, 0.5006070146982871, 0.5535905318603589]
-    image_std = [0.19215971846127658, 0.19749652155340464, 0.1958481473755369]
+    image_mean, image_std, _, _ = dataset_infer.imageStat()
+    #image_mean = [0.44413754410888107, 0.5006070146982871, 0.5535905318603589]
+    #image_std = [0.19215971846127658, 0.19749652155340464, 0.1958481473755369]
     image_mean, image_std = get_mean_std(input_c, image_mean, image_std)
 
     mask_rcnn = get_rock_model_instance_segmentation(num_classes, input_channel=input_c, image_mean=image_mean, image_std=image_std)
@@ -84,7 +87,7 @@ if __name__ == '__main__':
 
     instances = []
 
-    mask_rcnn.load_state_dict(torch.load("trained_param_c3_3/epoch_0002.param"))
+    mask_rcnn.load_state_dict(torch.load("trained_param_hypolith/epoch_0008.param"))
 
     f = 0
 
@@ -105,7 +108,8 @@ if __name__ == '__main__':
         result['scores'] = scores
         result['mask'] = masks
         result['image_name'] = image_name
-        result['coord'] = [int(i)*390 for i in image_name.split('/')[-1].split('.')[0].split('_')]
+        instances.append(result)
+        #result['coord'] = [int(i)*390 for i in image_name.split('/')[-1].split('.')[0].split('_')]
 
         nm = masks.shape[0]
         for i in range(nm):
@@ -113,11 +117,17 @@ if __name__ == '__main__':
             rock['bb'] = boxes[i]
             rock['mask'] = masks[i, 0, :, :]
             rock['score'] = scores[i]
-            rock['coord'] = [int(i)*390 for i in image_name.split('/')[-1].split('.')[0].split('_')]
-            instances.append(rock)
+            #rock['coord'] = [int(i)*390 for i in image_name.split('/')[-1].split('.')[0].split('_')
+            #instances.append(rock)
 
-        #visualize_result(mask_rcnn, data)
-        #visualize_pred(image, pred)
+        true_mask = visualize_gt(image, target, display=False)
+        pred_mask = visualize_pred(image, pred, thred=0.7, display=False)
+        name = image_name.split('/')[-1][:-4]+".jpg"
+        save_path = "datasets/hypolith/results/"
+        print(name)
+        print(image_name)
+        cv2.imwrite(save_path+"pred_"+name, pred_mask)
+        cv2.imwrite(save_path+"true_"+name, true_mask)
         if len(instances) >= 30000:
             name = "./hypolith_%02d.pickle" % f
             f += 1

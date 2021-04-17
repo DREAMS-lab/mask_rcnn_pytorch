@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 """
 
 class Dataset(object):
-    def __init__(self, data_path, transforms=None, input_channel=8, include_name=True):
+    def __init__(self, data_path, transforms=None, input_channel=6, include_name=True):
         self.data_path = data_path
         self.transforms = transforms
         self.data_files = [f for f in os.listdir(data_path) if f.endswith(".npy")]
@@ -34,37 +34,26 @@ class Dataset(object):
 
         data = np.load(data_path)
 
-        if self.input_channel == 8:
+        if self.input_channel == 6:
             image = data[:, :, :self.input_channel]
         elif self.input_channel == 3:
             image = data[:, :, :3]
-        elif self.input_channel == 5:
-            image = data[:, :, :5]
-        elif self.input_channel == 6:
-            rgb = data[:, :, :3]
-            dem = data[:, :, 5:8]
-            image = np.append(rgb, dem, axis=2)
-        elif self.input_channel == 7:
-            rgb_re_nir = data[:, :, :5]
-            dem = data[:, :, 5:8]
-            d = dem[:,:,0]*0.33 + dem[:,:,1]*0.33 + dem[:,:,2]*0.33
-            image = np.append(rgb_re_nir, np.expand_dims(d, axis=2), axis=2)
-        elif self.input_channel == -3:
-            image = data[:, :, 5:8]
-        elif self.input_channel == 1:
-            dem = data[:, :, 5:8]
-            d = dem[:,:,0]*0.33 + dem[:,:,1]*0.33 + dem[:,:,2]*0.33
-            image = np.expand_dims(d, axis=2)
         elif self.input_channel == 4:
             rgb = data[:, :, :3]
-            dem = data[:, :, 5:8]
+            dem = data[:, :, 3:6]
             d = dem[:,:,0]*0.33 + dem[:,:,1]*0.33 + dem[:,:,2]*0.33
             image = np.append(rgb, np.expand_dims(d, axis=2), axis=2)
+        elif self.input_channel == -3:
+            image = data[:, :, 3:6]
+        elif self.input_channel == 1:
+            dem = data[:, :, 3:6]
+            d = dem[:,:,0]*0.33 + dem[:,:,1]*0.33 + dem[:,:,2]*0.33
+            image = np.expand_dims(d, axis=2)
 
-        if data.shape[2] == 8:
+        if data.shape[2] == 6:
             masks = np.ones_like(image[:, :, :3]) * 255
         else:
-            masks = data[:, :, 8:]
+            masks = data[:, :, 6:]
         num_objs = masks.shape[2]
         """
         for i in reversed(range(num_objs)):
@@ -132,12 +121,12 @@ class Dataset(object):
         masks.show()
 
     def imageStat(self):
-        images = np.empty((0, 8), float)
+        images = np.empty((0, 6), float)
         for data_file in self.data_files:
             if len(data_file.split('_'))==2:
                 data_path = os.path.join(self.data_path, data_file)
                 data = np.load(data_path)
-                image = data[:, :, :8].astype(float).reshape(-1, 8)/255.0
+                image = data[:, :, :6].astype(float).reshape(-1, 6)/255.0
                 images = np.append(images, image, axis=0)
         return np.mean(images, axis=0).tolist(), np.std(images, axis=0).tolist(), \
                np.max(images, axis=0).tolist(), np.min(images, axis=0).tolist()
@@ -148,7 +137,7 @@ class Dataset(object):
 
 if __name__  ==  "__main__":
     #ds = Dataset("./datasets/Rock/data/")
-    ds = Dataset("./datasets/iros/bishop/aug/",input_channel=4)
+    ds = Dataset("./datasets/iros/c3/aug/", input_channel=4)
     image_mean, image_std, image_max, image_min = ds.imageStat()
     image, target = ds[0]
     print(image.shape)

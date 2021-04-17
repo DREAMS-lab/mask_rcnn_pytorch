@@ -55,7 +55,7 @@ def sample(image, rotation_min, rotation_max, fliplr, flipud, zoom_min, zoom_max
 
     return image
 
-def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1, input_c=6):
+def augmentor(npy_path, save_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=False, flipud=False, zoom_min=1, zoom_max=1, input_c=6):
     c = 0
     npy_files = [os.path.join(npy_path, f) for f in os.listdir(npy_path) if f.endswith('.npy')]
     while c < batch_number:
@@ -87,7 +87,8 @@ def augmentor(npy_path, batch_number=1, rotation_min=0, rotation_max=0, fliplr=F
             print(masks.shape[2])
             print('\n')
             data = np.append(image, masks, axis=2)
-            save_file = npy_file.split('.npy')[0] + "_" + unid + ".npy"
+            save_file = npy_file.split('.npy')[0].split('/')[-1] + "_" + unid + ".npy"
+            save_file = os.path.join(save_path, save_file)
             np.save(save_file, data)
 
         c += 1
@@ -166,15 +167,16 @@ def balanced_augmentor(image_path, label_path, aug_path, augmentation_batch=1, a
 
 if __name__ == '__main__':
     config = dict(
-        batch_number=1,
-        rotation_min=-90,
-        rotation_max=90,
+        batch_number=6,
+        rotation_min=0,#-90,
+        rotation_max=0,#90,
         fliplr=True,
         flipud=True,
-        zoom_min=0.8,
-        zoom_max=1.2)
+        zoom_min=1,#0.8,
+        zoom_max=1,#1.2,
+        input_c=6)
 
-    config = dict(
+    config_ = dict(
         augmentation_batch=5,
         augmentation_ratio=[1, 3, 15, 50, 100],
         rotation_min=-90,
@@ -183,7 +185,11 @@ if __name__ == '__main__':
         flipud=True,
         zoom_min=0.8,
         zoom_max=1.2)
-    image_path = './datasets/Eureka/images/'
-    label_path = './datasets/Eureka/labels/'
-    aug_path = './datasets/Eureka/aug/'
-    balanced_augmentor(image_path, label_path, aug_path, **config)
+    #image_path = './datasets/Eureka/images/'
+    #label_path = './datasets/Eureka/labels/'
+    #aug_path = './datasets/Eureka/aug/'
+    #balanced_augmentor(image_path, label_path, aug_path, **config_)
+
+    npy_path = './datasets/hypolith/rgb_masks/'
+    aug_path = './datasets/hypolith/aug/'
+    augmentor(npy_path, aug_path, **config)

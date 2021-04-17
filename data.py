@@ -23,7 +23,7 @@ import pickle
 """
 
 class Dataset(object):
-    def __init__(self, image_path, label_path, transforms=None, savePickle=True, readsave=True, include_name=True):
+    def __init__(self, image_path, label_path, transforms=None, savePickle=True, readsave=True, include_name=True, binary_cls=False):
         self.image_path = image_path
         self.label_path = label_path
         self.transforms = transforms
@@ -33,6 +33,7 @@ class Dataset(object):
         self.include_name = include_name
         self.savePickle = savePickle
         self.__refine(readsave)
+        self.binary_cls = binary_cls
 
 
     def __refine(self, readsave):
@@ -127,8 +128,10 @@ class Dataset(object):
     def __getitem__(self, idx):
         image, target = self.__getitem(idx)
         labels = target["labels"]
-        labels = labels + 1 # multiple classes
-        #labels = (labels > 0).type(torch.int64) + 1  # only two classes, non-damaged and damaged
+        if not self.binary_cls:
+            labels = labels + 1 # multiple classes
+        else:
+            labels = (labels > 0).type(torch.int64) + 1  # only two classes, non-damaged and damaged
         target["labels"] = labels
         return image, target
 

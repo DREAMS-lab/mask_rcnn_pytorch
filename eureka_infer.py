@@ -48,17 +48,18 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # our dataset has three classes only - background, non-damaged, and damaged
-    num_classes = 3
+    num_classes = 6  # 3 or 6
 
-    dataset_test = Dataset("./datasets/Eureka_infer/104/", "./datasets/Eureka_infer/104_labels/", get_transform(train=False), readsave=False)
+    dataset_test = Dataset("./datasets/Eureka_infer/102/", "./datasets/Eureka_infer/102_labels/", get_transform(train=False), readsave=False)
 
     data_loader_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=1, shuffle=False, num_workers=2,
         collate_fn=utils.collate_fn)
 
-    mask_rcnn = get_model_instance_segmentation(num_classes)
+    mask_rcnn = get_model_instance_segmentation(num_classes, image_mean=None, image_std=None, stats=False)
 
-    mask_rcnn.load_state_dict(torch.load("trained_param/epoch_0099.param"))
+    mask_rcnn.load_state_dict(torch.load("trained_param_eureka_aug_mult/epoch_0021.param"))
+    print("loaded weights")
 
     # move model to the right device
     mask_rcnn.to(device)
@@ -80,30 +81,7 @@ if __name__ == '__main__':
         result['masks'] = masks
         result['image_name'] = image_name
 
-        with open('./datasets/Eureka_infer/104_pred/' + image_name.split('/')[-1][:-4] + ".pickle", 'wb') as filehandle:
+        with open('./datasets/Eureka_infer/102_pred/mult_aug/' + image_name.split('/')[-1][:-4] + ".pickle", 'wb') as filehandle:
             pickle.dump(result, filehandle)
 
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-# our dataset has three classes only - background, non-damaged, and damaged
-num_classes = 3
-
-dataset_test = Dataset("./datasets/Eureka/images_test/", "./datasets/Eureka/labels_test/", get_transform(train=False), readsave=False)
-
-data_loader_test = torch.utils.data.DataLoader(
-    dataset_test, batch_size=1, shuffle=False, num_workers=2,
-    collate_fn=utils.collate_fn)
-
-mask_rcnn = get_model_instance_segmentation(num_classes)
-
-mask_rcnn.load_state_dict(torch.load("trained_param/epoch_0099.param"))
-
-# move model to the right device
-mask_rcnn.to(device)
-
-mask_rcnn.eval()
-from model import visualize_result
-for i in range(60, 300):
-    print(i)
-    visualize_result(mask_rcnn, dataset_test[i])
